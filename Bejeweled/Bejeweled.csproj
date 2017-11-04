@@ -78,6 +78,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\JD_Leaderboard.cs" />
+    <Compile Include="Assets\Scripts\JD_Timer.cs" />
     <Compile Include="Assets\Scripts\SM_ButtonManager.cs" />
     <Compile Include="Assets\Scripts\SM_PauseMenu.cs" />
   </ItemGroup>
