@@ -52,7 +52,9 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\SM_ButtonManager.cs" />
+     <Compile Include="Assets\Scripts\SM_OptionsSave.cs" />
      <Compile Include="Assets\Scripts\SM_PauseMenu.cs" />
+     <Compile Include="Assets\Scripts\SM_SaveOptions.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
