@@ -1,9 +1,10 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\SM_ButtonManager.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\SM_OptionsSave.cs">
     <Files>
-      <File FileName="Assets\Scripts\SM_PauseMenu.cs" Line="30" Column="10" />
-      <File FileName="Assets\Scripts\SM_ButtonManager.cs" Line="37" Column="2" />
+      <File FileName="Assets\Scripts\SM_PauseMenu.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\SM_ButtonManager.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\SM_OptionsSave.cs" Line="11" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
