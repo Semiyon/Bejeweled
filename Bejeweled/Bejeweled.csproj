@@ -199,12 +199,6 @@
     <Reference Include="UnityEngine.Timeline">
       <HintPath>Library\UnityAssemblies\UnityEngine.Timeline.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UIAutomation">
-      <HintPath>Library\UnityAssemblies\UnityEngine.UIAutomation.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.GoogleAudioSpatializer">
-      <HintPath>Library\UnityAssemblies\UnityEngine.GoogleAudioSpatializer.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.HoloLens">
       <HintPath>Library\UnityAssemblies\UnityEngine.HoloLens.dll</HintPath>
     </Reference>
@@ -221,12 +215,16 @@
   <ItemGroup>
     <Compile Include="Assets\Level.cs" />
     <Compile Include="Assets\Scripts\ClearablePiece.cs" />
+    <Compile Include="Assets\Scripts\ClearColorPiece.cs" />
+    <Compile Include="Assets\Scripts\ClearLinePieces.cs" />
     <Compile Include="Assets\Scripts\ColorPiece.cs" />
     <Compile Include="Assets\Scripts\GamePiece.cs" />
     <Compile Include="Assets\Scripts\Grid.cs" />
     <Compile Include="Assets\Scripts\JD_Score.cs" />
     <Compile Include="Assets\Scripts\JD_Timer.cs" />
+    <Compile Include="Assets\Scripts\MovablePiece.cs" />
     <Compile Include="Assets\Scripts\MoveablePiece.cs" />
+    <Compile Include="Assets\Scripts\NewBehaviourScript.cs" />
     <Compile Include="Assets\Scripts\SM_ButtonManager.cs" />
     <Compile Include="Assets\Scripts\SM_PauseMenu.cs" />
   </ItemGroup>

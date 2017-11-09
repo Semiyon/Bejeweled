@@ -1,130 +1,216 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
+public class Grid : MonoBehaviour
+{
 
-//Matthew Schuessler Grid Script 
-//Reference: Lynda.com/Unity-tutorials/Create-grid/440670/489014-4.html?autoplay=true
-//Some of the code may look very similar to the video, but I have done my best to make sure that my syntax as well as understanding of the code is prevalent
-
-public class Grid : MonoBehaviour {
-    //Start off by creating public parameters in which helps create the grid space, viewable in the inspector
-    public int xDim;
-    public int yDim;
-    public float fillTime;
-    public Level level;
-    private GamePiece pressedPiece;
-    private GamePiece enteredPiece;
-
-    private bool gameOver = false;
-
-    //An enum is being used for the piecetype as to make sure that the different color of gems are distinguishable and will help us match them later
     public enum PieceType
     {
         EMPTY,
         NORMAL,
+        BUBBLE,
+        ROW_CLEAR,
+        COLUMN_CLEAR,
+        RAINBOW,
         COUNT,
     };
 
-    //We have created a Serialized struct that allows us to edit the piecetype and the prefab in the inspector
     [System.Serializable]
     public struct PiecePrefab
     {
         public PieceType type;
         public GameObject prefab;
-    }
+    };
 
-    //We are creating a dictionary to make sure that we can insert prefabs for each of the piece types.
-    private Dictionary<PieceType, GameObject> piecePrefabDict;
+    [System.Serializable]
+    public struct PiecePosition
+    {
+        public PieceType type;
+        public int x;
+        public int y;
+    };
 
-    //This allows us to create an array of the pieceprefabs
+    public int xDim;
+    public int yDim;
+    public float fillTime;
+
+    public Level level;
+
     public PiecePrefab[] piecePrefabs;
-
-    //This allows us to add a background prefab if we decide to use sprites afterall, if not then we can just use the GameObjects that were created.
     public GameObject backgroundPrefab;
 
-    //This is creating a 2d array for the pieces in order to instantiate them
+    public PiecePosition[] initialPieces;
+
+    private Dictionary<PieceType, GameObject> piecePrefabDict;
+
     private GamePiece[,] pieces;
 
-	// Use this for initialization
-	void Start () {
+    private bool inverse = false;
+
+    private GamePiece pressedPiece;
+    private GamePiece enteredPiece;
+
+    private bool gameOver = false;
+
+    private bool isFilling = false;
+
+    public bool IsFilling
+    {
+        get { return isFilling; }
+    }
+
+    void Awake()
+    {
         piecePrefabDict = new Dictionary<PieceType, GameObject>();
-        //loop through all of the pieces in the array
+
         for (int i = 0; i < piecePrefabs.Length; i++)
         {
-            // We are checking to see if the dictionary contains the key type, if it does not then it will add it to the dictionary so that we can call it later
             if (!piecePrefabDict.ContainsKey(piecePrefabs[i].type))
             {
                 piecePrefabDict.Add(piecePrefabs[i].type, piecePrefabs[i].prefab);
             }
         }
-        //these three lines are generating the background prefab onto the grid, making sure that the vector3 is not rotated by using the Quaternion.identity
-        for (int x = 0; x < xDim; x++ )
-        {
-            for (int y = 0; y < yDim; y++)
-            {
-                GameObject background = (GameObject)Instantiate(backgroundPrefab, GetWorldPosition(x,y), Quaternion.identity);
-                //now we make the background a child
-                background.transform.parent = transform;
-            }
-        }
-        //Storing the array of the game pieces
-        pieces = new GamePiece[xDim, yDim];
-        //Same thing as above, looping through the variables in the array and making sure to spawn the pieces to the grid, this will only spawn the NORMAL piece though.
+
         for (int x = 0; x < xDim; x++)
         {
             for (int y = 0; y < yDim; y++)
             {
-                SpawnNewPiece(x, y, PieceType.EMPTY);
+                GameObject background = (GameObject)Instantiate(backgroundPrefab, GetWorldPosition(x, y), Quaternion.identity);
+                background.transform.parent = transform;
+            }
+        }
+
+        pieces = new GamePiece[xDim, yDim];
+
+        for (int i = 0; i < initialPieces.Length; i++)
+        {
+            if (initialPieces[i].x >= 0 && initialPieces[i].x < xDim
+                && initialPieces[i].y >= 0 && initialPieces[i].y < yDim)
+            {
+                SpawnNewPiece(initialPieces[i].x, initialPieces[i].y, initialPieces[i].type);
+            }
+        }
+
+        for (int x = 0; x < xDim; x++)
+        {
+            for (int y = 0; y < yDim; y++)
+            {
+                if (pieces[x, y] == null)
+                {
+                    SpawnNewPiece(x, y, PieceType.EMPTY);
+                }
             }
         }
 
         StartCoroutine(Fill());
+    }
 
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
 
     public IEnumerator Fill()
     {
         bool needsRefill = true;
+        isFilling = true;
+
         while (needsRefill)
         {
             yield return new WaitForSeconds(fillTime);
+
             while (FillStep())
             {
-                //inverse = !inverse;
+                inverse = !inverse;
                 yield return new WaitForSeconds(fillTime);
             }
 
-            needsRefill = ClearAllValidMatches ();
+            needsRefill = ClearAllValidMatches();
         }
+
+        isFilling = false;
     }
 
     public bool FillStep()
     {
         bool movedPiece = false;
 
-        for (int y = yDim-2; y >=0; y--)
+        for (int y = yDim - 2; y >= 0; y--)
         {
-            for (int x = 0; x < xDim; x++)
+            for (int loopX = 0; loopX < xDim; loopX++)
             {
+                int x = loopX;
+
+                if (inverse)
+                {
+                    x = xDim - 1 - loopX;
+                }
+
                 GamePiece piece = pieces[x, y];
 
-                if (piece.IsMoveable())
+                if (piece.IsMovable())
                 {
                     GamePiece pieceBelow = pieces[x, y + 1];
 
-                    if (pieceBelow.Type ==  PieceType.EMPTY)
+                    if (pieceBelow.Type == PieceType.EMPTY)
                     {
                         Destroy(pieceBelow.gameObject);
-                        piece.MoveableComponent.Move(x, y + 1, fillTime);
+                        piece.MovableComponent.Move(x, y + 1, fillTime);
                         pieces[x, y + 1] = piece;
                         SpawnNewPiece(x, y, PieceType.EMPTY);
                         movedPiece = true;
+                    }
+                    else
+                    {
+                        for (int diag = -1; diag <= 1; diag++)
+                        {
+                            if (diag != 0)
+                            {
+                                int diagX = x + diag;
+
+                                if (inverse)
+                                {
+                                    diagX = x - diag;
+                                }
+
+                                if (diagX >= 0 && diagX < xDim)
+                                {
+                                    GamePiece diagonalPiece = pieces[diagX, y + 1];
+
+                                    if (diagonalPiece.Type == PieceType.EMPTY)
+                                    {
+                                        bool hasPieceAbove = true;
+
+                                        for (int aboveY = y; aboveY >= 0; aboveY--)
+                                        {
+                                            GamePiece pieceAbove = pieces[diagX, aboveY];
+
+                                            if (pieceAbove.IsMovable())
+                                            {
+                                                break;
+                                            }
+                                            else if (!pieceAbove.IsMovable() && pieceAbove.Type != PieceType.EMPTY)
+                                            {
+                                                hasPieceAbove = false;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!hasPieceAbove)
+                                        {
+                                            Destroy(diagonalPiece.gameObject);
+                                            piece.MovableComponent.Move(diagX, y + 1, fillTime);
+                                            pieces[diagX, y + 1] = piece;
+                                            SpawnNewPiece(x, y, PieceType.EMPTY);
+                                            movedPiece = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -142,16 +228,16 @@ public class Grid : MonoBehaviour {
 
                 pieces[x, 0] = newPiece.GetComponent<GamePiece>();
                 pieces[x, 0].Init(x, -1, this, PieceType.NORMAL);
-                pieces[x, 0].MoveableComponent.Move(x, 0, fillTime);
+                pieces[x, 0].MovableComponent.Move(x, 0, fillTime);
                 pieces[x, 0].ColorComponent.SetColor((ColorPiece.ColorType)Random.Range(0, pieces[x, 0].ColorComponent.NumColors));
                 movedPiece = true;
             }
         }
+
         return movedPiece;
     }
 
-
-   public Vector2 GetWorldPosition(int x, int y)
+    public Vector2 GetWorldPosition(int x, int y)
     {
         return new Vector2(transform.position.x - xDim / 2.0f + x,
             transform.position.y + yDim / 2.0f - y);
@@ -171,7 +257,7 @@ public class Grid : MonoBehaviour {
     public bool IsAdjacent(GamePiece piece1, GamePiece piece2)
     {
         return (piece1.X == piece2.X && (int)Mathf.Abs(piece1.Y - piece2.Y) == 1)
-            || (piece1.Y == piece2.Y && (int)Mathf.Abs(piece1.X - piece2.X) == 1);
+        || (piece1.Y == piece2.Y && (int)Mathf.Abs(piece1.X - piece2.X) == 1);
     }
 
     public void SwapPieces(GamePiece piece1, GamePiece piece2)
@@ -180,23 +266,62 @@ public class Grid : MonoBehaviour {
         {
             return;
         }
-        if (piece1.IsMoveable () && piece2.IsMoveable())
+
+        if (piece1.IsMovable() && piece2.IsMovable())
         {
-            pieces [piece1.X, piece1.Y] = piece2;
+            pieces[piece1.X, piece1.Y] = piece2;
             pieces[piece2.X, piece2.Y] = piece1;
 
-            if (GetMatch(piece1, piece2.X, piece2.Y) != null || GetMatch(piece2, piece1.X, piece1.Y) != null)
+            if (GetMatch(piece1, piece2.X, piece2.Y) != null || GetMatch(piece2, piece1.X, piece1.Y) != null
+                || piece1.Type == PieceType.RAINBOW || piece2.Type == PieceType.RAINBOW)
             {
 
                 int piece1X = piece1.X;
                 int piece1Y = piece1.Y;
 
-                piece1.MoveableComponent.Move(piece2.X, piece2.Y, fillTime);
-                piece2.MoveableComponent.Move(piece1X, piece1Y, fillTime);
+                piece1.MovableComponent.Move(piece2.X, piece2.Y, fillTime);
+                piece2.MovableComponent.Move(piece1X, piece1Y, fillTime);
 
-                ClearAllValidMatches ();
+                if (piece1.Type == PieceType.RAINBOW && piece1.IsClearable() && piece2.IsColored())
+                {
+                    ClearColorPiece clearColor = piece1.GetComponent<ClearColorPiece>();
 
-                StartCoroutine(Fill ());
+                    if (clearColor)
+                    {
+                        clearColor.Color = piece2.ColorComponent.Color;
+                    }
+
+                    ClearPiece(piece1.X, piece1.Y);
+                }
+
+                if (piece2.Type == PieceType.RAINBOW && piece2.IsClearable() && piece1.IsColored())
+                {
+                    ClearColorPiece clearColor = piece2.GetComponent<ClearColorPiece>();
+
+                    if (clearColor)
+                    {
+                        clearColor.Color = piece1.ColorComponent.Color;
+                    }
+
+                    ClearPiece(piece2.X, piece2.Y);
+                }
+
+                ClearAllValidMatches();
+
+                if (piece1.Type == PieceType.ROW_CLEAR || piece1.Type == PieceType.COLUMN_CLEAR)
+                {
+                    ClearPiece(piece1.X, piece1.Y);
+                }
+
+                if (piece2.Type == PieceType.ROW_CLEAR || piece2.Type == PieceType.COLUMN_CLEAR)
+                {
+                    ClearPiece(piece2.X, piece2.Y);
+                }
+
+                pressedPiece = null;
+                enteredPiece = null;
+
+                StartCoroutine(Fill());
 
                 level.OnMove();
             }
@@ -220,9 +345,9 @@ public class Grid : MonoBehaviour {
 
     public void ReleasePiece()
     {
-        if (IsAdjacent (pressedPiece, enteredPiece))
+        if (IsAdjacent(pressedPiece, enteredPiece))
         {
-            SwapPieces (pressedPiece,enteredPiece);
+            SwapPieces(pressedPiece, enteredPiece);
         }
     }
 
@@ -235,6 +360,7 @@ public class Grid : MonoBehaviour {
             List<GamePiece> verticalPieces = new List<GamePiece>();
             List<GamePiece> matchingPieces = new List<GamePiece>();
 
+            // First check horizontal
             horizontalPieces.Add(piece);
 
             for (int dir = 0; dir <= 1; dir++)
@@ -244,19 +370,20 @@ public class Grid : MonoBehaviour {
                     int x;
 
                     if (dir == 0)
-                    {
+                    { // Left
                         x = newX - xOffset;
                     }
                     else
-                    {
+                    { // Right
                         x = newX + xOffset;
                     }
+
                     if (x < 0 || x >= xDim)
                     {
                         break;
                     }
 
-                    if(pieces [x,newY].IsColored () && pieces[x, newY].ColorComponent.Color == color)
+                    if (pieces[x, newY].IsColored() && pieces[x, newY].ColorComponent.Color == color)
                     {
                         horizontalPieces.Add(pieces[x, newY]);
                     }
@@ -271,10 +398,11 @@ public class Grid : MonoBehaviour {
             {
                 for (int i = 0; i < horizontalPieces.Count; i++)
                 {
-                    matchingPieces.Add (horizontalPieces [i]);
+                    matchingPieces.Add(horizontalPieces[i]);
                 }
             }
 
+            // Traverse vertically if we found a match (for L and T shapes)
             if (horizontalPieces.Count >= 3)
             {
                 for (int i = 0; i < horizontalPieces.Count; i++)
@@ -286,12 +414,11 @@ public class Grid : MonoBehaviour {
                             int y;
 
                             if (dir == 0)
-                            {
+                            { // Up
                                 y = newY - yOffset;
                             }
-
                             else
-                            {
+                            { // Down
                                 y = newY + yOffset;
                             }
 
@@ -299,7 +426,8 @@ public class Grid : MonoBehaviour {
                             {
                                 break;
                             }
-                            if (pieces[horizontalPieces[i].X,y].IsColored() && pieces [horizontalPieces[i].X,y].ColorComponent.Color == color)
+
+                            if (pieces[horizontalPieces[i].X, y].IsColored() && pieces[horizontalPieces[i].X, y].ColorComponent.Color == color)
                             {
                                 verticalPieces.Add(pieces[horizontalPieces[i].X, y]);
                             }
@@ -310,7 +438,7 @@ public class Grid : MonoBehaviour {
                         }
                     }
 
-                    if (verticalPieces.Count <2)
+                    if (verticalPieces.Count < 2)
                     {
                         verticalPieces.Clear();
                     }
@@ -320,16 +448,19 @@ public class Grid : MonoBehaviour {
                         {
                             matchingPieces.Add(verticalPieces[j]);
                         }
+
                         break;
                     }
                 }
             }
 
-        if (matchingPieces.Count >= 3)
-        {
+            if (matchingPieces.Count >= 3)
+            {
                 return matchingPieces;
-        }
-            //look vertically now
+            }
+
+            // Didn't find anything going horizontally first,
+            // so now check vertically
             horizontalPieces.Clear();
             verticalPieces.Clear();
             verticalPieces.Add(piece);
@@ -341,13 +472,14 @@ public class Grid : MonoBehaviour {
                     int y;
 
                     if (dir == 0)
-                    {
+                    { // Up
                         y = newY - yOffset;
                     }
                     else
-                    {
-                        y = newY +yOffset;
+                    { // Down
+                        y = newY + yOffset;
                     }
+
                     if (y < 0 || y >= yDim)
                     {
                         break;
@@ -372,6 +504,7 @@ public class Grid : MonoBehaviour {
                 }
             }
 
+            // Traverse horizontally if we found a match (for L and T shapes)
             if (verticalPieces.Count >= 3)
             {
                 for (int i = 0; i < verticalPieces.Count; i++)
@@ -383,12 +516,11 @@ public class Grid : MonoBehaviour {
                             int x;
 
                             if (dir == 0)
-                            {
+                            { // Left
                                 x = newX - xOffset;
                             }
-
                             else
-                            {
+                            { // Right
                                 x = newX + xOffset;
                             }
 
@@ -396,9 +528,10 @@ public class Grid : MonoBehaviour {
                             {
                                 break;
                             }
+
                             if (pieces[x, verticalPieces[i].Y].IsColored() && pieces[x, verticalPieces[i].Y].ColorComponent.Color == color)
                             {
-                                verticalPieces.Add(pieces[x, verticalPieces[i].Y]);
+                                horizontalPieces.Add(pieces[x, verticalPieces[i].Y]);
                             }
                             else
                             {
@@ -417,6 +550,7 @@ public class Grid : MonoBehaviour {
                         {
                             matchingPieces.Add(horizontalPieces[j]);
                         }
+
                         break;
                     }
                 }
@@ -426,7 +560,6 @@ public class Grid : MonoBehaviour {
             {
                 return matchingPieces;
             }
-
         }
 
         return null;
@@ -446,11 +579,58 @@ public class Grid : MonoBehaviour {
 
                     if (match != null)
                     {
+                        PieceType specialPieceType = PieceType.COUNT;
+                        GamePiece randomPiece = match[Random.Range(0, match.Count)];
+                        int specialPieceX = randomPiece.X;
+                        int specialPieceY = randomPiece.Y;
+
+                        if (match.Count == 4)
+                        {
+                            if (pressedPiece == null || enteredPiece == null)
+                            {
+                                specialPieceType = (PieceType)Random.Range((int)PieceType.ROW_CLEAR, (int)PieceType.COLUMN_CLEAR);
+                            }
+                            else if (pressedPiece.Y == enteredPiece.Y)
+                            {
+                                specialPieceType = PieceType.ROW_CLEAR;
+                            }
+                            else
+                            {
+                                specialPieceType = PieceType.COLUMN_CLEAR;
+                            }
+                        }
+                        else if (match.Count >= 5)
+                        {
+                            specialPieceType = PieceType.RAINBOW;
+                        }
+
                         for (int i = 0; i < match.Count; i++)
                         {
-                            if (ClearPiece (match [i].X, match [i].Y))
+                            if (ClearPiece(match[i].X, match[i].Y))
                             {
                                 needsRefill = true;
+
+                                if (match[i] == pressedPiece || match[i] == enteredPiece)
+                                {
+                                    specialPieceX = match[i].X;
+                                    specialPieceY = match[i].Y;
+                                }
+                            }
+                        }
+
+                        if (specialPieceType != PieceType.COUNT)
+                        {
+                            Destroy(pieces[specialPieceX, specialPieceY]);
+                            GamePiece newPiece = SpawnNewPiece(specialPieceX, specialPieceY, specialPieceType);
+
+                            if ((specialPieceType == PieceType.ROW_CLEAR || specialPieceType == PieceType.COLUMN_CLEAR)
+                                && newPiece.IsColored() && match[0].IsColored())
+                            {
+                                newPiece.ColorComponent.SetColor(match[0].ColorComponent.Color);
+                            }
+                            else if (specialPieceType == PieceType.RAINBOW && newPiece.IsColored())
+                            {
+                                newPiece.ColorComponent.SetColor(ColorPiece.ColorType.ANY);
                             }
                         }
                     }
@@ -463,18 +643,97 @@ public class Grid : MonoBehaviour {
 
     public bool ClearPiece(int x, int y)
     {
-        if (pieces [x,y].IsClearable () && !pieces[x, y].ClearableComponent.IsBeingCleared)
+        if (pieces[x, y].IsClearable() && !pieces[x, y].ClearableComponent.IsBeingCleared)
         {
             pieces[x, y].ClearableComponent.Clear();
             SpawnNewPiece(x, y, PieceType.EMPTY);
+
+            ClearObstacles(x, y);
 
             return true;
         }
 
         return false;
     }
+
+    public void ClearObstacles(int x, int y)
+    {
+        for (int adjacentX = x - 1; adjacentX <= x + 1; adjacentX++)
+        {
+            if (adjacentX != x && adjacentX >= 0 && adjacentX < xDim)
+            {
+                if (pieces[adjacentX, y].Type == PieceType.BUBBLE && pieces[adjacentX, y].IsClearable())
+                {
+                    pieces[adjacentX, y].ClearableComponent.Clear();
+                    SpawnNewPiece(adjacentX, y, PieceType.EMPTY);
+                }
+            }
+        }
+
+        for (int adjacentY = y - 1; adjacentY <= y + 1; adjacentY++)
+        {
+            if (adjacentY != y && adjacentY >= 0 && adjacentY < yDim)
+            {
+                if (pieces[x, adjacentY].Type == PieceType.BUBBLE && pieces[x, adjacentY].IsClearable())
+                {
+                    pieces[x, adjacentY].ClearableComponent.Clear();
+                    SpawnNewPiece(x, adjacentY, PieceType.EMPTY);
+                }
+            }
+        }
+    }
+
+    public void ClearRow(int row)
+    {
+        for (int x = 0; x < xDim; x++)
+        {
+            ClearPiece(x, row);
+        }
+    }
+
+    public void ClearColumn(int column)
+    {
+        for (int y = 0; y < yDim; y++)
+        {
+            ClearPiece(column, y);
+        }
+    }
+
+    public void ClearColor(ColorPiece.ColorType color)
+    {
+        for (int x = 0; x < xDim; x++)
+        {
+            for (int y = 0; y < yDim; y++)
+            {
+                if (pieces[x, y].IsColored() && (pieces[x, y].ColorComponent.Color == color
+                    || color == ColorPiece.ColorType.ANY))
+                {
+                    ClearPiece(x, y);
+                }
+            }
+        }
+    }
+
     public void GameOver()
     {
         gameOver = true;
+    }
+
+    public List<GamePiece> GetPiecesOfType(PieceType type)
+    {
+        List<GamePiece> piecesOfType = new List<GamePiece>();
+
+        for (int x = 0; x < xDim; x++)
+        {
+            for (int y = 0; y < yDim; y++)
+            {
+                if (pieces[x, y].Type == type)
+                {
+                    piecesOfType.Add(pieces[x, y]);
+                }
+            }
+        }
+
+        return piecesOfType;
     }
 }

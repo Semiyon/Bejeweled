@@ -1,18 +1,20 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections;
 
-public class GamePiece : MonoBehaviour {
+public class GamePiece : MonoBehaviour
+{
 
     public int score;
+
     private int x;
     private int y;
 
     public int X
     {
         get { return x; }
-        set {
-            if (IsMoveable())
+        set
+        {
+            if (IsMovable())
             {
                 x = value;
             }
@@ -24,7 +26,7 @@ public class GamePiece : MonoBehaviour {
         get { return y; }
         set
         {
-            if (IsMoveable())
+            if (IsMovable())
             {
                 y = value;
             }
@@ -45,11 +47,11 @@ public class GamePiece : MonoBehaviour {
         get { return grid; }
     }
 
-    private MoveablePiece moveableComponent;
+    private MovablePiece movableComponent;
 
-    public MoveablePiece MoveableComponent
+    public MovablePiece MovableComponent
     {
-        get { return moveableComponent; }
+        get { return movableComponent; }
     }
 
     private ColorPiece colorComponent;
@@ -66,25 +68,26 @@ public class GamePiece : MonoBehaviour {
         get { return clearableComponent; }
     }
 
-
-    private void Awake()
+    void Awake()
     {
-        moveableComponent = GetComponent<MoveablePiece>();
+        movableComponent = GetComponent<MovablePiece>();
         colorComponent = GetComponent<ColorPiece>();
         clearableComponent = GetComponent<ClearablePiece>();
     }
 
     // Use this for initialization
-    void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    void Start()
+    {
 
-    public void Init(int _x, int _y,Grid _grid, Grid.PieceType _type)
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
+
+    public void Init(int _x, int _y, Grid _grid, Grid.PieceType _type)
     {
         x = _x;
         y = _y;
@@ -97,19 +100,19 @@ public class GamePiece : MonoBehaviour {
         grid.EnterPiece(this);
     }
 
-     void OnMouseDown()
+    void OnMouseDown()
     {
         grid.PressPiece(this);
     }
 
-     void OnMouseUp()
+    void OnMouseUp()
     {
         grid.ReleasePiece();
     }
 
-    public bool IsMoveable()
+    public bool IsMovable()
     {
-        return moveableComponent != null;
+        return movableComponent != null;
     }
 
     public bool IsColored()
@@ -121,5 +124,4 @@ public class GamePiece : MonoBehaviour {
     {
         return clearableComponent != null;
     }
-
 }
