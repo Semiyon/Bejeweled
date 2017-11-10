@@ -1,13 +1,11 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class ClearablePiece : MonoBehaviour
-{
+public class ClearablePiece : MonoBehaviour {
 
     public AnimationClip clearAnimation;
-
     private bool isBeingCleared = false;
-
     public bool IsBeingCleared
     {
         get { return isBeingCleared; }
@@ -15,24 +13,22 @@ public class ClearablePiece : MonoBehaviour
 
     protected GamePiece piece;
 
-    void Awake()
+     void Awake()
     {
         piece = GetComponent<GamePiece>();
     }
 
     // Use this for initialization
-    void Start()
-    {
+    void Start () {
+		
+	}
+	
+	// Update is called once per frame
+	void Update () {
+		
+	}
 
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    public virtual void Clear()
+    public void Clear()
     {
         piece.GridRef.level.OnPieceCleared(piece);
         isBeingCleared = true;
@@ -52,4 +48,5 @@ public class ClearablePiece : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
 }

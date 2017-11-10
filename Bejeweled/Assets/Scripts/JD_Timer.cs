@@ -12,7 +12,10 @@ public class JD_Timer : MonoBehaviour {
 
     void Update()
     {
-        
+        if (GameObject.Find("Timer").GetComponent<JD_Score>().scored) ;
+        {
+
+        }
         timeLeft -= Time.deltaTime;
         text.text = "" + Mathf.Round(timeLeft);
         if (timeLeft <= 0)
